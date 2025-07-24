@@ -1,5 +1,6 @@
 vendor
 .DS_Store
+meta.json
 
 
 # Byte-compiled / optimized / DLL files

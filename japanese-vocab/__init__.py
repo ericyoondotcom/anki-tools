@@ -2,55 +2,16 @@ import sys
 import os
 from typing import Optional, List
 import json
-
-# Add the vendor directory to sys.path for bundled dependencies
-addon_dir = os.path.dirname(__file__)
-vendor_dir = os.path.join(addon_dir, "vendor")
-if vendor_dir not in sys.path:
-    sys.path.insert(0, vendor_dir)
+import urllib.request
+import urllib.parse
+import urllib.error
 
 from aqt import mw
 from aqt.utils import showInfo, qconnect, tooltip
 from aqt.qt import *
+from aqt.qt import QAction
 from anki.notes import Note
 from anki.collection import Collection
-
-try:
-    import openai
-    from openai import OpenAI
-except ImportError as e:
-    showInfo(f"Failed to import required modules: {e}")
-    openai = None
-
-
-# JSON Schema definitions for structured output
-KANJI_RESPONSE_SCHEMA = {
-    "type": "object",
-    "properties": {
-        "kanji": {
-            "type": ["string", "null"],
-            "description": "The kanji spelling of the word, or null if the word is typically written only in kana"
-        },
-        "explanation": {
-            "type": ["string", "null"],
-            "description": "Brief explanation of why this kanji was chosen or why null was returned"
-        }
-    },
-    "required": ["kanji"],
-    "additionalProperties": False
-}
-
-ROMAJI_RESPONSE_SCHEMA = {
-    "type": "object",
-    "properties": {
-        "romaji": {
-            "type": "string",
-            "description": "The romanized version of the Japanese kana"
-        }
-    },
-    "required": ["romaji"],
-    "additionalProperties": False
-}
 
 
 def get_openai_key() -> Optional[str]:
@@ -87,28 +48,44 @@ def get_selected_notes() -> List[Note]:
     return [mw.col.get_note(nid) for nid in selected_nids]
 
 
-def call_openai_structured(client: OpenAI, prompt: str, response_schema: dict, max_retries: int = 3):
-    """Make a structured API call to OpenAI with retry logic using JSON mode."""
+def call_openai_api(api_key: str, prompt: str, max_retries: int = 3):
+    """Make a JSON API call to OpenAI using urllib with retry logic."""
+    url = "https://api.openai.com/v1/chat/completions"
+    
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+    
+    data = {
+        "model": "gpt-4o-mini",
+        "messages": [
+            {"role": "system", "content": "You are a helpful assistant that provides accurate Japanese language information. Always respond with valid JSON matching the requested format."},
+            {"role": "user", "content": prompt}
+        ],
+        "response_format": {"type": "json_object"},
+        "temperature": 0.1
+    }
+    
     for attempt in range(max_retries):
         try:
-            completion = client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[
-                    {"role": "system", "content": "You are a helpful assistant that provides accurate Japanese language information. Always respond with valid JSON matching the requested format."},
-                    {"role": "user", "content": prompt}
-                ],
-                response_format={"type": "json_object"},
-                temperature=0.1
-            )
+            # Prepare the request
+            json_data = json.dumps(data).encode('utf-8')
+            request = urllib.request.Request(url, data=json_data, headers=headers)
             
-            response_text = completion.choices[0].message.content
-            try:
-                return json.loads(response_text)
-            except json.JSONDecodeError as e:
-                if attempt == max_retries - 1:
-                    raise Exception(f"Failed to parse JSON response: {e}")
-                continue
+            # Make the request
+            with urllib.request.urlopen(request) as response:
+                response_text = response.read().decode('utf-8')
+                response_json = json.loads(response_text)
                 
+                # Extract the content from OpenAI response
+                content = response_json["choices"][0]["message"]["content"]
+                return json.loads(content)
+                
+        except (urllib.error.URLError, json.JSONDecodeError, KeyError) as e:
+            if attempt == max_retries - 1:
+                raise Exception(f"Failed to get response from OpenAI: {e}")
+            continue
         except Exception as e:
             if attempt == max_retries - 1:
                 raise e
@@ -117,16 +94,11 @@ def call_openai_structured(client: OpenAI, prompt: str, response_schema: dict, m
 
 def generate_kanji():
     """Generate kanji from kana and English meaning for selected notes."""
-    if not openai:
-        showInfo("OpenAI module not available. Please check your installation.")
-        return
-    
     api_key = get_openai_key()
     if not api_key:
         return
     
     try:
-        client = OpenAI(api_key=api_key)
         notes = get_selected_notes()
         
         if not notes:
@@ -162,7 +134,7 @@ Please respond with a JSON object in this exact format:
 
 If there is no appropriate kanji, use null (not a string) for the kanji field."""
                 
-                response = call_openai_structured(client, prompt, KANJI_RESPONSE_SCHEMA)
+                response = call_openai_api(api_key, prompt)
                 
                 if response.get("kanji"):
                     note["Kanji"] = response["kanji"]
@@ -188,16 +160,11 @@ If there is no appropriate kanji, use null (not a string) for the kanji field.""
 
 def generate_romaji():
     """Generate romaji from kana for selected notes."""
-    if not openai:
-        showInfo("OpenAI module not available. Please check your installation.")
-        return
-    
     api_key = get_openai_key()
     if not api_key:
         return
     
     try:
-        client = OpenAI(api_key=api_key)
         notes = get_selected_notes()
         
         if not notes:
@@ -229,13 +196,14 @@ def generate_romaji():
                 - Always write the nasal ん as "n". Do not assimilate it to "m".
                 - Add spaces after words and around particles. Also, if a word is a compound word, add proper spacing to break the word up roughly into morphemes, but be logical about it. For example, "かんこうきゃくはきれいです” should be "kankyou kyaku wa kirei desu".
                 - Render the particle "は" as "wa", the particle "へ" as "e", and the particle "を" as "o" when they function as particles in a sentence. In other contexts, render them according to their standard pronunciations.
+                - Capitalize the first letter of the output, but do not capitalize anything else.
 
 Please respond with a JSON object in this exact format:
 {{
     "romaji": "romanized_text"
 }}"""
                 
-                response = call_openai_structured(client, prompt, ROMAJI_RESPONSE_SCHEMA)
+                response = call_openai_api(api_key, prompt)
                 
                 if response.get("romaji"):
                     note["Romanji"] = response["romaji"]

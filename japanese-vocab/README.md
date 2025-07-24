@@ -8,13 +8,7 @@ Utilities for working with Japanese vocab cards using OpenAI to generate kanji a
    ln -s /path/to/repo/japanese-vocab ~/Library/Application\ Support/Anki2/addons21/japanese-vocab
    ```
 
-2. Make sure dependencies are bundled by running:
-   ```bash
-   cd japanese-vocab
-   python bundle_deps.py
-   ```
-
-3. Restart Anki and configure your OpenAI API key (see Config section below).
+2. Restart Anki and configure your OpenAI API key (see Config section below).
 
 ## Config
 Please specify the add-on config like so:
@@ -55,5 +49,5 @@ For this add-on to work, your note fields must be exactly named as follows:
 ## Notes
 - The add-on only processes selected notes in the browser
 - It skips notes that already have the target field filled
-- Uses OpenAI's gpt-4o-mini model with structured output for reliable results
-- All dependencies are bundled with the add-on (no need for separate pip installs)
+- Uses OpenAI's gpt-4o-mini model with JSON responses for reliable results
+- No external dependencies required - uses Python's built-in urllib for HTTP requests
