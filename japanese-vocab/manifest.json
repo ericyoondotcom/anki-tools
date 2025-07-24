@@ -1,0 +1,10 @@
+{
+    "name": "Japanese Vocab Utils",
+    "author": "ericyoondotcom",
+    "version": "1.0.0",
+    "description": "Utilities for generating kanji and romaji for Japanese vocabulary cards using OpenAI",
+    "anki_version": "2.1.50",
+    "homepage": "https://github.com/ericyoondotcom/anki-tools",
+    "conflicts": [],
+    "dependencies": []
+}
