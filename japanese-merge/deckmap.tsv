@@ -1,0 +1,72 @@
+# Deck flattening map: 47 source decks -> 8 target decks.
+# Read by merge.py. Any source deck not listed here aborts the run rather than
+# being silently dropped.
+#
+# Columns:  source_deck <TAB> target_deck <TAB> lesson_tag
+#
+# The lesson_tag preserves the granularity lost by flattening. A second tag,
+# src::<full original path>, is generated automatically for every note so the
+# pre-merge structure stays fully reconstructible.
+
+# --- L1 - Tobira -----------------------------------------------------------
+Japanese::Yale L1::Tobira L00	L1 - Tobira	Tobira::L00
+Japanese::Yale L1::Tobira L01	L1 - Tobira	Tobira::L01
+Japanese::Yale L1::Tobira L02	L1 - Tobira	Tobira::L02
+Japanese::Yale L1::Tobira L03	L1 - Tobira	Tobira::L03
+Japanese::Yale L1::Tobira L04	L1 - Tobira	Tobira::L04
+Japanese::Yale L1::Tobira L05	L1 - Tobira	Tobira::L05
+Japanese::Yale L1::Tobira L06	L1 - Tobira	Tobira::L06
+Japanese::Yale L1::Days of the month	L1 - Tobira	Tobira::DaysOfMonth
+Japanese Kanji::Yale L1	L1 - Tobira	Yale::L1
+
+# --- L2 - Tobira -----------------------------------------------------------
+Japanese::Yale L2::Tobira L07	L2 - Tobira	Tobira::L07
+Japanese::Yale L2::Tobira L08	L2 - Tobira	Tobira::L08
+Japanese::Yale L2::Tobira L09	L2 - Tobira	Tobira::L09
+Japanese::Yale L2::Tobira L10	L2 - Tobira	Tobira::L10
+Japanese::Yale L2::Tobira L11	L2 - Tobira	Tobira::L11
+Japanese::Yale L2::Tobira L12	L2 - Tobira	Tobira::L12
+Japanese Kanji::Yale L2	L2 - Tobira	Yale::L2
+
+# --- L3 - Sun Academy ------------------------------------------------------
+Japanese::Sun Academy::Week 1	L3 - Sun Academy	SunAcademy::Week1
+Japanese::Sun Academy::Week 2	L3 - Sun Academy	SunAcademy::Week2
+Japanese::Sun Academy::Week 3	L3 - Sun Academy	SunAcademy::Week3
+Japanese::Sun Academy::Week 4	L3 - Sun Academy	SunAcademy::Week4
+Japanese::Sun Academy::Week 5	L3 - Sun Academy	SunAcademy::Week5
+Japanese::Sun Academy::Week 6	L3 - Sun Academy	SunAcademy::Week6
+Japanese::Sun Academy::Week 7	L3 - Sun Academy	SunAcademy::Week7
+Japanese::Sun Academy::Week 8	L3 - Sun Academy	SunAcademy::Week8
+Japanese Kanji::Sun Academy::Week 1	L3 - Sun Academy	SunAcademy::Week1
+Japanese Kanji::Sun Academy::Week 2	L3 - Sun Academy	SunAcademy::Week2
+
+# --- L4 - Tobira (formerly Tobira II) --------------------------------------
+Japanese::Tobira II	L4 - Tobira	Tobira::II
+Japanese::Tobira II::Tobira L13	L4 - Tobira	Tobira::L13
+Japanese::Tobira II::Tobira L14	L4 - Tobira	Tobira::L14
+Japanese::Tobira II::Tobira L15	L4 - Tobira	Tobira::L15
+Japanese::Tobira II::Tobira L16	L4 - Tobira	Tobira::L16
+Japanese::Tobira II::Tobira L17	L4 - Tobira	Tobira::L17
+Japanese::Tobira II::Tobira L18	L4 - Tobira	Tobira::L18
+Japanese::Tobira II::Tobira L19	L4 - Tobira	Tobira::L19
+Japanese::Tobira II::Tobira L20	L4 - Tobira	Tobira::L20
+Japanese Kanji::Tobira II	L4 - Tobira	Tobira::II
+
+# --- L5 - Yale -------------------------------------------------------------
+Japanese::Yale L5	L5 - Yale	Yale::L5
+
+# --- L6 - Yale -------------------------------------------------------------
+Japanese::Yale L6	L6 - Yale	Yale::L6
+Japanese::Yale L6::Expressions	L6 - Yale	Yale::L6::Expressions
+Japanese::Yale L6::Keigo	L6 - Yale	Yale::L6::Keigo
+Japanese::Yale L6::Quartet U7	L6 - Yale	Quartet::U7
+Japanese Kanji::Yale L6::Quartet U7	L6 - Yale	Quartet::U7
+Japanese Kanji::Yale L6::Quartet U8	L6 - Yale	Quartet::U8
+
+# --- Misc ------------------------------------------------------------------
+Japanese::*Misc Japanese Vocab	Misc	Misc
+Japanese Kanji	Misc	Kanji::Unsorted
+Japanese Kanji::Kanji from readings	Misc	Kanji::FromReadings
+
+# --- Yoji Jukugo -----------------------------------------------------------
+Japanese::*Yoji Jukugo	Yoji Jukugo	YojiJukugo

@@ -1,0 +1,41 @@
+# Hand decisions for kanji notes that automatic matching cannot resolve safely.
+# Read by merge.py. Edit freely before running — nothing here is hardcoded.
+#
+# Columns:  kanji <TAB> kana <TAB> action <TAB> target_english <TAB> why
+#
+# action:
+#   merge       merge into the vocab note whose English field is <target_english>
+#   standalone  do NOT merge; keep as its own note, gets full vocab cards (pmrw)
+#   ideograph   do NOT merge; bound form / not a usable standalone word, so it
+#               gets NO produce/meaning cards — flags are "rw" only
+#
+# target_english must match the vocab note's English field exactly.
+
+# --- must NOT merge: homophones that are genuinely different words ----------
+田	た	ideograph	-	"Other" (た) is 他, a different character; 田 alone is bound (田んぼ)
+回	かい	ideograph	-	vocab "(floor # of apartment)" is 階, not 回; 回 is a bound counter
+週	しゅう	ideograph	-	bound counter (今週/一週間); never stands alone as a word
+厚い	あつい	standalone	-	vocab "Hot" (あつい) is 暑い and is already correctly claimed
+
+# --- homophone pairs: pick the right sense ---------------------------------
+書く	かく	merge	To write	描く is "to draw/paint"; 書く is "to write"
+帰る	かえる	merge	To return (home)	変える is "to change"; 帰る is "to return home"
+切る	きる	merge	To cut	着る is "to wear"; 切る is "to cut"
+着る	きる	merge	To put on clothes (above the waist)	切る is "to cut"; 着る is "to wear"
+変える	かえる	merge	To change (X into Y)	帰る is "to return home"; 変える is "to change"
+
+# --- same word, differently worded English ---------------------------------
+中	なか	merge	Inside	中 covers both "inside" and "middle"
+海	うみ	merge	Sea	same word
+元気	げんき	merge	In good health, energetic	same word
+所	ところ	merge	Place	same word
+絵	え	merge	Painting	絵 = picture / drawing / painting
+動く	うごく	merge	Something moves / something functions	intransitive "to move"
+計画	けいかく	merge	Plan	計画 = plan
+最近	さいきん	merge	Recently	same word
+幸せ	しあわせ	merge	Happy	same word (na-adjective / noun)
+送る	おくる	merge	To send	"to give a ride" is also 送る but is a separate vocab note
+
+# --- ambiguous because the VOCAB deck itself has duplicates ----------------
+運ぶ	はこぶ	merge	To carry/to transport	duplicate vocab notes; picked the more-studied (33 reps)
+実際に	じっさいに	merge	Actually; really; practically	duplicate vocab notes; exact English match

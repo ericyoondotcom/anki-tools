@@ -7,7 +7,7 @@ import urllib.parse
 import urllib.error
 
 from aqt import mw
-from aqt.utils import showInfo, qconnect, tooltip
+from aqt.utils import showInfo, qconnect, tooltip, askUser, getText
 from aqt.qt import *
 from aqt.qt import QAction
 from anki.notes import Note
@@ -226,9 +226,166 @@ Please respond with a JSON object in this exact format:
     except Exception as e:
         showInfo(f"Error: {str(e)}")
 
+# ===========================================================================
+# Card flags for the merged "Japanese" note type
+#
+# The Cards field holds any subset of "p w m r" (produce / write / meaning /
+# read).  Anki template conditionals can only test a field for emptiness, so
+# one field cannot gate four cards; Cards is expanded into four hidden gate
+# fields _P/_W/_M/_R which the templates actually test.
+# ===========================================================================
+
+JAPANESE_NOTETYPE = "Japanese"
+FLAG_ORDER = "pwmr"
+# flag letter -> (gate field, template ord)
+FLAG_SPEC = {
+    "p": ("_P", 0),
+    "w": ("_W", 1),
+    "m": ("_M", 2),
+    "r": ("_R", 3),
+}
+ORD_LABEL = {0: "Produce", 1: "Write", 2: "Meaning", 3: "Read"}
+
+
+def normalise_flags(raw: str) -> str:
+    """Canonical flag string: lower case, deduplicated, in p-w-m-r order."""
+    seen = {ch for ch in (raw or "").lower() if ch in FLAG_ORDER}
+    return "".join(ch for ch in FLAG_ORDER if ch in seen)
+
+
+def _japanese_notes(notes: List[Note]) -> List[Note]:
+    nt = mw.col.models.by_name(JAPANESE_NOTETYPE)
+    if not nt:
+        showInfo(f"Note type {JAPANESE_NOTETYPE!r} not found.")
+        return []
+    return [n for n in notes if n.mid == nt["id"]]
+
+
+def _studied_cards_losing_their_flag(note: Note, flags: str):
+    """Cards that have review history but whose flag letter was removed.
+
+    Letting these through would render an empty front, and the card's
+    scheduling would then be destroyed by Tools > Empty Cards.
+    """
+    at_risk = []
+    for card in note.cards():
+        letter = next((l for l, (_g, o) in FLAG_SPEC.items() if o == card.ord), None)
+        if letter and letter not in flags and card.reps > 0:
+            at_risk.append((letter, card))
+    return at_risk
+
+
+def _apply_flags(note: Note, flags: str) -> bool:
+    """Write Cards + the four gate fields. Returns True if anything changed."""
+    changed = False
+    if note["Cards"] != flags:
+        note["Cards"] = flags
+        changed = True
+    for letter, (gate, _ord) in FLAG_SPEC.items():
+        want = "1" if letter in flags else ""
+        if note[gate] != want:
+            note[gate] = want
+            changed = True
+    return changed
+
+
+def _sync(notes: List[Note], new_flags: Optional[str] = None) -> None:
+    """Shared worker for both menu actions."""
+    notes = _japanese_notes(notes)
+    if not notes:
+        showInfo(f"No {JAPANESE_NOTETYPE} notes selected. Select some in the browser first.")
+        return
+
+    # --- guard: never silently strip a flag off a card with history --------
+    risky = []
+    for note in notes:
+        flags = normalise_flags(new_flags if new_flags is not None else note["Cards"])
+        for letter, card in _studied_cards_losing_their_flag(note, flags):
+            risky.append((note, letter, card))
+
+    suspend_instead = False
+    if risky:
+        preview = "\n".join(
+            f"  {n['English'][:40]} — {ORD_LABEL[c.ord]} card, {c.reps} reviews"
+            for n, _l, c in risky[:10]
+        )
+        more = f"\n  ...and {len(risky) - 10} more" if len(risky) > 10 else ""
+        suspend_instead = askUser(
+            f"{len(risky)} card(s) have review history but their flag is being removed:\n\n"
+            f"{preview}{more}\n\n"
+            "Suspend them instead, keeping the flag and all scheduling?\n\n"
+            "Yes  — suspend, nothing is lost (recommended)\n"
+            "No   — remove the flag; these become empty cards and Tools > "
+            "Empty Cards will delete their history",
+            defaultno=False,
+        )
+
+    keep_for = {}
+    if suspend_instead:
+        for note, letter, _card in risky:
+            keep_for.setdefault(note.id, set()).add(letter)
+        mw.col.sched.suspend_cards([c.id for _n, _l, c in risky])
+
+    updated = 0
+    for note in notes:
+        flags = normalise_flags(new_flags if new_flags is not None else note["Cards"])
+        if note.id in keep_for:
+            flags = normalise_flags(flags + "".join(keep_for[note.id]))
+        if _apply_flags(note, flags):
+            note.flush()
+            updated += 1
+
+    msg = f"Updated {updated} note(s)."
+    if suspend_instead:
+        msg += f" Suspended {len(risky)} card(s) rather than emptying them."
+    tooltip(msg)
+
+
+def sync_card_flags():
+    """Rebuild _P/_W/_M/_R from the Cards field on the selected notes."""
+    try:
+        _sync(get_selected_notes())
+    except Exception as e:
+        showInfo(f"Error: {e}")
+
+
+def set_card_flags():
+    """Prompt for a flag string and apply it to every selected note."""
+    try:
+        notes = get_selected_notes()
+        if not notes:
+            showInfo("No notes selected. Please select notes in the browser first.")
+            return
+        text, ok = getText(
+            "Cards to generate for the selected notes.\n\n"
+            "  p = produce (English -> Japanese)\n"
+            "  w = write the kanji\n"
+            "  m = meaning (Japanese -> English)\n"
+            "  r = read aloud (kanji, no furigana)\n\n"
+            "e.g. \"pm\" or \"pmrw\". Write/read cards only appear when the "
+            "note has a Kanji.",
+            default="pmrw",
+        )
+        if not ok:
+            return
+        flags = normalise_flags(text)
+        if not flags:
+            showInfo("No valid flags given. Use any of: p w m r")
+            return
+        _sync(notes, new_flags=flags)
+    except Exception as e:
+        showInfo(f"Error: {e}")
+
+
 gen_kanji_action = QAction("Generate kanji from kana", mw)
 gen_romaji_action = QAction("Generate romaji from kana", mw)
+sync_flags_action = QAction("Sync Japanese card flags", mw)
+set_flags_action = QAction("Set Japanese card flags...", mw)
 qconnect(gen_kanji_action.triggered, generate_kanji)
 qconnect(gen_romaji_action.triggered, generate_romaji)
+qconnect(sync_flags_action.triggered, sync_card_flags)
+qconnect(set_flags_action.triggered, set_card_flags)
 mw.form.menuTools.addAction(gen_kanji_action)
 mw.form.menuTools.addAction(gen_romaji_action)
+mw.form.menuTools.addAction(set_flags_action)
+mw.form.menuTools.addAction(sync_flags_action)

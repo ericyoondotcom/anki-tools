@@ -1,0 +1,22 @@
+<div class="en sub">{{English}}</div>
+
+<hr>
+
+{{#Kanji}}
+<div class="jp">{{Kanji}}</div>
+<div class="kana">{{Kana}}</div>
+{{/Kanji}}
+{{^Kanji}}
+<div class="jp">{{Kana}}</div>
+{{/Kanji}}
+
+{{#Romanji}}
+<div class="spoiler romaji">
+  <div class="placeholder">romaji</div>
+  <div class="contents">{{Romanji}}</div>
+</div>
+{{/Romanji}}
+
+{{#Memorization Aid}}
+<div class="aid">{{Memorization Aid}}</div>
+{{/Memorization Aid}}

@@ -1,0 +1,136 @@
+/* ==========================================================================
+   Japanese — shared stylesheet for all four card templates
+   ========================================================================== */
+
+.card {
+  --bg: #fbfbfd;
+  --fg: #16161a;
+  --muted: #6b6b76;
+  --line: #e3e3ea;
+  --accent: #c0392b;
+  --panel: #00000008;
+  --radius: 12px;
+
+  font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans",
+               "Noto Sans JP", "Yu Gothic", sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 20px;
+  line-height: 1.5;
+  text-align: center;
+  padding: 24px 16px;
+}
+
+.card.nightMode,
+.nightMode .card {
+  --bg: #16161a;
+  --fg: #ececf1;
+  --muted: #9a9aa8;
+  --line: #2e2e38;
+  --accent: #ff7a6b;
+  --panel: #ffffff10;
+}
+
+/* --- the question chip: with four card types you must know what is asked --- */
+.prompt {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 20px;
+}
+
+/* --- content ------------------------------------------------------------- */
+.jp {
+  font-size: clamp(30px, 7vw, 46px);
+  font-weight: 600;
+  line-height: 1.35;
+}
+.kana {
+  font-size: clamp(17px, 3.6vw, 21px);
+  color: var(--muted);
+  margin-top: 6px;
+}
+.kana.lead {
+  font-size: clamp(21px, 4.4vw, 26px);
+  color: var(--fg);
+  margin-top: 0;
+}
+.en {
+  font-size: clamp(19px, 4vw, 24px);
+}
+.en.sub {
+  font-size: 15px;
+  color: var(--muted);
+}
+.aid {
+  font-size: 15px;
+  color: var(--muted);
+  margin: 14px auto 0;
+  max-width: 420px;
+  border-left: 3px solid var(--accent);
+  padding-left: 12px;
+  text-align: left;
+}
+
+hr {
+  border: 0;
+  border-top: 1px solid var(--line);
+  margin: 22px auto;
+  max-width: 420px;
+}
+
+/* --- stroke-order diagrams ----------------------------------------------- */
+.diagram {
+  margin-top: 18px;
+}
+.diagram img {
+  max-width: min(90vw, 340px);
+  height: auto;
+}
+.nightMode .diagram img {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+/* --- spoilers (carried over unchanged from the previous note types) ------- */
+.spoiler {
+  font-size: 15px;
+  opacity: 50%;
+  border: 2px black solid;
+  padding: 10px;
+  position: relative;
+  display: inline-block;
+  min-width: 140px;
+  margin-top: 16px;
+  border-radius: var(--radius);
+}
+.nightMode .spoiler {
+  border-color: white;
+}
+.spoiler:hover {
+  opacity: 100%;
+}
+.spoiler .contents {
+  opacity: 0;
+}
+.spoiler:hover .contents {
+  opacity: 100%;
+}
+.placeholder {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+.spoiler:hover .placeholder {
+  color: #00000000;
+}
+
+/* --- narrow screens (AnkiMobile / AnkiDroid) ----------------------------- */
+@media (max-width: 500px) {
+  .card { padding: 18px 12px; font-size: 18px; }
+  .aid  { max-width: 100%; }
+}
