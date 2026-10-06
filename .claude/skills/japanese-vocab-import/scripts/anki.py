@@ -63,8 +63,8 @@ def find_duplicates(kana, kanji):
 def add(notes, deck):
     ak("createDeck", deck=deck)
     checked = ak("canAddNotesWithErrorDetail", notes=notes)
-    blocked = [(n["fields"]["Kanji"]["value"] or n["fields"]["Kana"]["value"],
-                c.get("error")) for n, c in zip(notes, checked) if not c.get("canAdd")]
+    blocked = [(n["fields"]["Kanji"] or n["fields"]["Kana"], c.get("error"))
+               for n, c in zip(notes, checked) if not c.get("canAdd")]
     if blocked:
         raise RuntimeError(f"blocked: {blocked}")
     return ak("addNotes", notes=notes)

@@ -102,6 +102,53 @@ To check the parser itself still behaves after any edit:
 It runs synthetic rows covering every parsing gotcha below, so it works without a
 handout on hand.
 
+## Step 2b — Some handouts have no reading column
+
+The column parsing above assumes four columns. Not every handout is built that
+way. The `おカバさま` list looks like this:
+
+```
+[150] 1@95 | ＊@140 | 河馬@176 | かば@212 | hippopotamus@248
+[216] ＊@140 | 慌てる（あわてる）be@176 | flustered@299
+[474] ＊@140 | 草食（そうしょく）herbivore@176
+```
+
+There is **no separate reading column**. The reading is inline in full-width
+parentheses, and because nothing is space-separated, pdfplumber emits the word,
+its reading, and often the first English word as a **single token** at x≈176.
+`慌てる（あわてる）be` is one "word".
+
+So `extract_starred.py`'s column split does not work on this shape. What still
+works is the marker column (`＊` at x≈140) and the paragraph column. Use those
+to select rows, join everything at x ≥ 170, and then split the text on the
+parentheses rather than on x:
+
+```
+漢字（かな）English      ->  kanji, reading, gloss
+かなEnglish             ->  kana-only word, no kanji
+```
+
+Expect to clean up the seams by hand. Transcribing 38 entries is quicker than
+making a general parser for a layout that changes every handout.
+
+### Scoping to a range of paragraphs
+
+When the user asks for only part of the list ("paragraphs 1–3"), the paragraph
+number sits in its own column left of the marker, at x≈95:
+
+```python
+if w["x0"] < 110 and w["top"] > 80 and w["text"].strip().isdigit():
+    paragraph = int(w["text"])
+```
+
+Record each paragraph's `(page, top)` and keep the rows between the start of the
+first one you want and the start of the one after the last. In the `おカバさま`
+handout the paragraph starts were p1/150, p1/584, p2/489, p3/170, p3/492,
+p4/331, p5/249 — so paragraphs 1–3 are everything from p1/150 up to p3/170.
+
+The handout's own quiz numbering is **not** the unit number: that list headed
+paragraphs 1–3 as "クイズ７". Don't name the deck after the quiz.
+
 ## Step 3 — Write out the note data by hand
 
 The parser gives you Japanese, reading, and English. You still supply the
@@ -148,6 +195,17 @@ pulls in homophones, and these are real examples from this collection:
 
 Print the kanji, kana, English, deck and tags of each hit and decide one at a
 time. Do not automate this.
+
+The first-field check also **blocks** a genuinely new word when some unrelated
+note happens to carry the identical English. Adding 非 "Error; mistake" was
+refused because 誤り（あやまり）in `JLPT N3` already had exactly that gloss. The
+fix is to reword your gloss so it is both accurate and distinct — 非 became
+"Fault; error; wrongdoing" — not to pass `allowDuplicate`.
+
+Duplicates are not confined to the lesson decks. The collection also has
+`JLPT N2` and `JLPT N3` decks, and most of the overlap turned up there. Those
+notes are often **brand new** (never studied), so moving them costs nothing —
+check `type`/`interval` before worrying about what a reset would lose.
 
 ## Step 5 — Create the deck, then add the new notes
 
@@ -244,6 +302,13 @@ detection, Anki search, and the stroke-order diagram lookup.
 `unicodedata.normalize("NFKC", s)` fixes all of them. The script does it; if you
 parse by hand, do it yourself.
 
+### NFKC also half-widths the parentheses
+
+`normalize("NFKC", s)` is what fixes the Kangxi radicals, but it rewrites `（`
+and `）` to ASCII `(` and `)` at the same time. The existing Unit decks store
+full-width parentheses (`（〜を）責める`), so don't feed NFKC output straight into
+the `Kanji` field — normalise for *comparison*, and type the stored form by hand.
+
 ### Wrapped rows and stray page numbers
 
 Long readings and English glosses wrap onto the next row, so one entry spans
@@ -294,6 +359,18 @@ Removing it means **Tools → Empty Cards** in the Anki GUI, which deletes the
 card *and its review history*. Per `japanese-merge/README.md`, prefer suspending
 over deleting, and leave the Empty Cards run to the user rather than doing it on
 their behalf.
+
+### Moving a duplicate does not always mean resetting it
+
+"Move it in and reset" is the default, but it is irreversible and wrong for a
+word the user already knows. Before resetting, look at the intervals: 警察 was
+at 1281 days and 怪我 at 571. The user's call on those was to **keep** the
+produce and meaning scheduling and only let the new kanji read card come in
+fresh — they knew the meanings, just not the kanji.
+
+So split it: fill in the `Kanji` field and set `(card - read)`, which generates
+the read card as new on its own, `changeDeck` the cards, and simply skip
+`forgetCards`. Quote the actual intervals when you ask.
 
 ### Anki has to be running
 
